@@ -1,1 +1,1 @@
-# code-quality-analysis-tool
+The Code Quality Analysis Tool is a Rust-based application designed to facilitate the analysis of code quality through a robust server setup. It features configurable routes dedicated to the processing and evaluation of code, aiming to initialize and streamline the code analysis phase for developers. This tool aims to enhance code quality by providing insightful feedback and recommendations.
