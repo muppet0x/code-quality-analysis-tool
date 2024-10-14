@@ -1,6 +1,9 @@
 use std::env;
 use std::fs;
 use std::path::Path;
+use std::process;
+
+extern crate dotenv;
 
 struct MetricResult {
     name: String,
@@ -22,7 +25,10 @@ impl CodeAnalyzer {
     }
 
     fn read_env_var(key: &str) -> Option<String> {
-        env::var(key).ok()
+        match env::var(key) {
+            Ok(val) => Some(val),
+            Err(_) => None,
+        }
     }
 
     fn load_source_file(file_path: &Path) -> Result<String, std::io::Error> {
@@ -35,12 +41,11 @@ impl CodeAnalyzer {
 
     fn analyze(&mut self) {
         let loc = self.lines_of_code();
-        let loc_metric = MetricResult {
+        self.metrics_results.push(MetricResult {
             name: "Lines of Code".to_string(),
             score: loc as f64,
             passed: loc > 0,
-        };
-        self.metrics_results.push(loc_metric);
+        });
     }
 
     fn output_results(&self) {
@@ -51,15 +56,28 @@ impl CodeAnalyzer {
 }
 
 fn main() {
-    if let Some(env_file) = CodeAnalyzer::read_env_var("CODE_ANALYZER_ENV_FILE") {
-        dotenv::dotenv().ok();
-        println!("Loaded env from {}", env_file);
+    match CodeAnalyzer::read_env_var("CODE_ANALYZER_ENV_FILE") {
+        Some(env_file) => {
+            if dotenv::dotenv().is_err() {
+                println!("Warning: Failed to load .env file");
+            }
+            println!("Loaded env from {}", env_file);
+        },
+        None => println!("No custom environment file specified."),
     }
 
-    let source_code = "fn main() {\n    println!(\"Hello, world!\");\n}";
-    let mut analyzer = CodeAnalyzer::new(source_code);
+    let file_path_str = "path_to_your_source_code.rs"; 
+    let file_path = Path::new(file_path_str);
+    let source_code = match CodeAnalyzer::load_source_file(file_path) {
+        Ok(code) => code,
+        Err(e) => {
+            println!("Failed to load source code from {}: {}", file_path.display(), e);
+            process::exit(1);
+        },
+    };
+
+    let mut analyzer = CodeAnalyzer::new(&source_code);
 
     analyzer.analyze();
-
     analyzer.output_results();
 }
