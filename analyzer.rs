@@ -2,6 +2,7 @@ use std::env;
 use std::fs;
 use std::path::Path;
 use std::process;
+use std::error::Error;
 
 extern crate dotenv;
 
@@ -24,11 +25,8 @@ impl CodeAnalyzer {
         }
     }
 
-    fn read_env_var(key: &str) -> Option<String> {
-        match env::var(key) {
-            Ok(val) => Some(val),
-            Err(_) => None,
-        }
+    fn read_env_var(key: &str) -> Result<String, env::VarError> {
+        env::var(key)
     }
 
     fn load_source_file(file_path: &Path) -> Result<String, std::io::Error> {
@@ -55,29 +53,29 @@ impl CodeAnalyzer {
     }
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn Error>> {
     match CodeAnalyzer::read_env_var("CODE_ANALYZER_ENV_FILE") {
-        Some(env_file) => {
+        Ok(env_file) => {
             if dotenv::dotenv().is_err() {
-                println!("Warning: Failed to load .env file");
+                eprintln!("Warning: Failed to load .env file");
             }
-            println!("Loaded env from {}", env_file);
+            println!("Loaded env var from {}", env_file);
         },
-        None => println!("No custom environment file specified."),
+        None | Err(_) => eprintln!("No custom environment file specified or error reading env var."),
     }
 
-    let file_path_str = "path_to_your_source_code.rs"; 
+    let file_path_str = "path_to_your_source_code.rs";
     let file_path = Path::new(file_path_str);
-    let source_code = match CodeAnalyzer::load_source_file(file_path) {
-        Ok(code) => code,
-        Err(e) => {
-            println!("Failed to load source code from {}: {}", file_path.display(), e);
+    let source_code = CodeAnalyzer::load_source_file(file_path)
+        .map_err(|e| {
+            eprintln!("Failed to load source code from {}: {}", file_path.display(), e);
             process::exit(1);
-        },
-    };
+        })?;
 
     let mut analyzer = CodeAnalyzer::new(&source_code);
 
     analyzer.analyze();
     analyzer.output_results();
+
+    Ok(())
 }
