@@ -6,12 +6,14 @@ use std::error::Error;
 
 extern crate dotenv;
 
+#[derive(Debug)]
 struct MetricResult {
     name: String,
     score: f64,
     passed: bool,
 }
 
+#[derive(Debug)]
 struct CodeAnalyzer {
     source_code: String,
     metrics_results: Vec<MetricResult>,
@@ -54,23 +56,24 @@ impl CodeAnalyzer {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
+    dotenv::dotenv().ok(); // Try to load .env, but it's not critical if it fails.
+
     match CodeAnalyzer::read_env_var("CODE_ANALYZER_ENV_FILE") {
         Ok(env_file) => {
-            if dotenv::dotenv().is_err() {
-                eprintln!("Warning: Failed to load .env file");
-            }
             println!("Loaded env var from {}", env_file);
         },
-        None | Err(_) => eprintln!("No custom environment file specified or error reading env var."),
+        Err(_) => eprintln!("No custom environment file specified, using defaults."),
     }
-
-    let file_path_str = "path_to_your_source_code.rs";
-    let file_path = Path::new(file_path_str);
-    let source_code = CodeAnalyzer::load_source_file(file_path)
-        .map_err(|e| {
+    
+    let file_path_str = env::var("SOURCE_FILE_PATH").unwrap_or_else(|_| "path_to_your_source_code.rs".to_string());
+    let file_path = Path::new(&file_path_str);
+    let source_code = match CodeAnalyzer::load_source_file(file_path) {
+        Ok(code) => code,
+        Err(e) => {
             eprintln!("Failed to load source code from {}: {}", file_path.display(), e);
             process::exit(1);
-        })?;
+        }
+    };
 
     let mut analyzer = CodeAnalyzer::new(&source_code);
 
