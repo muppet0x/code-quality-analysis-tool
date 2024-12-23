@@ -1,7 +1,10 @@
-use serde::{Serialize, Deserialize};
-use std::{env, collections::HashMap};
 use once_cell::sync::Lazy;
-use std::sync::Mutex;
+use serde::{Deserialize, Serialize};
+use std::{
+    collections::HashMap,
+    env,
+    sync::Mutex,
+};
 
 static RESULTS_CACHE: Lazy<Mutex<HashMap<String, Vec<AnalysisResults>>>> = Lazy::new(|| Mutex::new(HashMap::new()));
 
@@ -47,18 +50,22 @@ pub fn fetch_analysis_results() -> Vec<AnalysisResults> {
     match cache.get("analysis_results") {
         Some(results) => results.clone(),
         None => {
-            let results = vec![
-                AnalysisResults {
-                    id: 1,
-                    title: "Example Analysis 1".to_string(),
-                    summary: "This is a summary of the analysis results.".to_string(),
-                    total_score: 89.5,
-                    detailed_scores: vec![
-                        ScoreDetail { category: "Performance".to_string(), score: 90.0 },
-                        ScoreDetail { category: "Accuracy".to_string(), score: 89.0 },
-                    ],
-                },
-            ];
+            let results = vec![AnalysisResults {
+                id: 1,
+                title: "Example Analysis 1".to_string(),
+                summary: "This is a summary of the analysis results.".to_string(),
+                total_score: 89.5,
+                detailed_scores: vec![
+                    ScoreDetail {
+                        category: "Performance".to_string(),
+                        score: 90.0,
+                    },
+                    ScoreDetail {
+                        category: "Accuracy".to_string(),
+                        score: 89.0,
+                    },
+                ],
+            }];
             cache.insert("analysis_results".to_string(), results.clone());
             results
         }
